@@ -13,8 +13,16 @@ public class LoginPage {
     }
 
     public void login(String username, String password) {
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("username"))).sendKeys(username);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password"))).sendKeys(password);
-        wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='submit']"))).click();
+        WebElement usernameField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("username")));
+        WebElement passwordField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
+        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='submit']")));
+
+        usernameField.clear();
+        usernameField.sendKeys(username);
+        passwordField.clear();
+        passwordField.sendKeys(password);
+        loginButton.click();
     }
+
+
 }

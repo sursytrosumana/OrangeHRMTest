@@ -6,58 +6,87 @@ import org.openqa.selenium.support.ui.*;
 import java.util.List;
 
 public class RecruitmentPage {
-    private WebDriver driver;
-    private WebDriverWait wait;
+    private final WebDriver driver;
+    private final WebDriverWait wait;
+
+    // Common Locators
+    private static final By RECRUITMENT_TAB = By.xpath("//span[text()='Recruitment']");
+    private static final By VACANCIES_TAB = By.xpath("//a[text()='Vacancies']");
+    private static final By ADD_CANDIDATE_BUTTON = By.xpath("//button[contains(@class, 'oxd-button') and contains(., 'Add')]");
+    private static final By FIRST_NAME_INPUT = By.name("firstName");
+    private static final By LAST_NAME_INPUT = By.name("lastName");
+    private static final By EMAIL_INPUT = By.xpath("(//input[@placeholder='Type here'])[1]");
+    private static final By SUBMIT_BUTTON = By.xpath("//button[@type='submit']");
+    private static final By DROPDOWN_LISTBOX = By.xpath("//div[@role='listbox']");
+    private static final By CANDIDATE_RESULT_CARD = By.xpath("//div[@class='oxd-table-card']");
 
     public RecruitmentPage(WebDriver driver, WebDriverWait wait) {
         this.driver = driver;
         this.wait = wait;
     }
 
+    // Navigation
+    public void goToRecruitment() {
+        waitUntilClickable(RECRUITMENT_TAB).click();
+    }
+
     public void goToVacancies() {
         goToRecruitment();
-        wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//a[text()='Vacancies']"))).click();
+        waitUntilClickable(VACANCIES_TAB).click();
     }
 
-    public void goToRecruitment() {
-        wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//span[text()='Recruitment']"))).click();
-    }
-
+    // Candidate Actions
     public void addCandidate(String firstName, String lastName, String email) {
-        wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[contains(@class, 'oxd-button') and contains(., 'Add')]"))).click();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("firstName"))).sendKeys(firstName);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("lastName"))).sendKeys(lastName);
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//input[@placeholder='Type here'])[1]"))).sendKeys(email);
-        wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[@type='submit']"))).click();
+        waitUntilClickable(ADD_CANDIDATE_BUTTON).click();
+        waitUntilVisible(FIRST_NAME_INPUT).sendKeys(firstName);
+        waitUntilVisible(LAST_NAME_INPUT).sendKeys(lastName);
+        waitUntilVisible(EMAIL_INPUT).sendKeys(email);
+        waitUntilClickable(SUBMIT_BUTTON).click();
     }
 
+    public List<WebElement> getCandidateSearchResults() {
+        return driver.findElements(CANDIDATE_RESULT_CARD);
+    }
+
+    // Dynamic Dropdown Interaction
     public void typeAndSelectFromDropdown(String inputXpath, String typedValue, String visibleOptionText) {
-        WebElement input = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(inputXpath)));
+        WebElement input = waitUntilClickable(By.xpath(inputXpath));
         input.clear();
         input.sendKeys(typedValue);
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@role='listbox']")));
+        waitUntilVisible(DROPDOWN_LISTBOX);
 
-        List<String> xpathsToTry = List.of(
+        List<String> fallbackXPaths = List.of(
                 "//div[@role='listbox']//div[normalize-space(text())='" + visibleOptionText + "']",
                 "//div[@role='listbox']//div[contains(text(),'" + visibleOptionText + "')]",
                 "//div[@role='listbox']//span[normalize-space(text())='" + visibleOptionText + "']",
                 "//div[@role='listbox']//*[contains(text(),'" + visibleOptionText + "')]"
         );
 
-        for (String xpath : xpathsToTry) {
+        for (String xpath : fallbackXPaths) {
             try {
-                WebElement option = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(xpath)));
-                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", option);
+                WebElement option = waitUntilClickable(By.xpath(xpath));
+                scrollIntoView(option);
                 option.click();
                 return;
-            } catch (TimeoutException ignored) {}
+            } catch (TimeoutException ignored) {
+                // Try next xpath
+            }
         }
 
         throw new NoSuchElementException("Dropdown option not found: " + visibleOptionText);
     }
 
-    public List<WebElement> getCandidateSearchResults() {
-        return driver.findElements(By.xpath("//div[@class='oxd-table-card']"));
+    // Helpers
+    private WebElement waitUntilClickable(By locator) {
+        return wait.until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    private WebElement waitUntilVisible(By locator) {
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
+    }
+
+    private void scrollIntoView(WebElement element) {
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
     }
 }
