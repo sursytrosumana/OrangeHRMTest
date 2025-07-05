@@ -1,24 +1,25 @@
 package org.example.pages;
 
+import com.aventstack.extentreports.ExtentTest;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.*;
 
 import java.util.List;
 
 public class RecruitmentPage {
-    private final WebDriver driver;
-    private final WebDriverWait wait;
+    private WebDriver driver;
+    private WebDriverWait wait;
 
     // Common Locators
-    private static final By RECRUITMENT_TAB = By.xpath("//span[text()='Recruitment']");
-    private static final By VACANCIES_TAB = By.xpath("//a[text()='Vacancies']");
-    private static final By ADD_CANDIDATE_BUTTON = By.xpath("//button[contains(@class, 'oxd-button') and contains(., 'Add')]");
-    private static final By FIRST_NAME_INPUT = By.name("firstName");
-    private static final By LAST_NAME_INPUT = By.name("lastName");
-    private static final By EMAIL_INPUT = By.xpath("(//input[@placeholder='Type here'])[1]");
-    private static final By SUBMIT_BUTTON = By.xpath("//button[@type='submit']");
-    private static final By DROPDOWN_LISTBOX = By.xpath("//div[@role='listbox']");
-    private static final By CANDIDATE_RESULT_CARD = By.xpath("//div[@class='oxd-table-card']");
+    By recruitmentTab = By.xpath("//span[text()='Recruitment']");
+    By vacanciesTab = By.xpath("//a[text()='Vacancies']");
+    By addCandidateTab = By.xpath("//button[contains(@class, 'oxd-button') and contains(., 'Add')]");
+    By inputFirstName = By.name("firstName");
+    By inputLastName = By.name("lastName");
+    By inputEmail = By.xpath("(//input[@placeholder='Type here'])[1]");
+    By save = By.xpath("//button[@type='submit']");
+    By candidateNameDropdwon = By.xpath("//div[@role='listbox']");
+    By searchResultCandidate = By.xpath("//div[@class='oxd-table-card']");
 
     public RecruitmentPage(WebDriver driver, WebDriverWait wait) {
         this.driver = driver;
@@ -27,54 +28,83 @@ public class RecruitmentPage {
 
     // Navigation
     public void goToRecruitment() {
-        waitUntilClickable(RECRUITMENT_TAB).click();
+        waitUntilClickable(recruitmentTab).click();
+    }
+
+    public void goToRecruitment(ExtentTest test) {
+        try {
+            test.info("Clicking on Recruitment tab");
+            goToRecruitment();
+            test.pass("Recruitment page loaded");
+        } catch (Exception e) {
+            test.fail("Failed to navigate to Recruitment: " + e.getMessage());
+            throw e;
+        }
     }
 
     public void goToVacancies() {
         goToRecruitment();
-        waitUntilClickable(VACANCIES_TAB).click();
+        waitUntilClickable(vacanciesTab).click();
     }
 
-    // Candidate Actions
-    public void addCandidate(String firstName, String lastName, String email) {
-        waitUntilClickable(ADD_CANDIDATE_BUTTON).click();
-        waitUntilVisible(FIRST_NAME_INPUT).sendKeys(firstName);
-        waitUntilVisible(LAST_NAME_INPUT).sendKeys(lastName);
-        waitUntilVisible(EMAIL_INPUT).sendKeys(email);
-        waitUntilClickable(SUBMIT_BUTTON).click();
-    }
-
-    public List<WebElement> getCandidateSearchResults() {
-        return driver.findElements(CANDIDATE_RESULT_CARD);
-    }
-
-    // Dynamic Dropdown Interaction
-    public void typeAndSelectFromDropdown(String inputXpath, String typedValue, String visibleOptionText) {
-        WebElement input = waitUntilClickable(By.xpath(inputXpath));
-        input.clear();
-        input.sendKeys(typedValue);
-
-        waitUntilVisible(DROPDOWN_LISTBOX);
-
-        List<String> fallbackXPaths = List.of(
-                "//div[@role='listbox']//div[normalize-space(text())='" + visibleOptionText + "']",
-                "//div[@role='listbox']//div[contains(text(),'" + visibleOptionText + "')]",
-                "//div[@role='listbox']//span[normalize-space(text())='" + visibleOptionText + "']",
-                "//div[@role='listbox']//*[contains(text(),'" + visibleOptionText + "')]"
-        );
-
-        for (String xpath : fallbackXPaths) {
-            try {
-                WebElement option = waitUntilClickable(By.xpath(xpath));
-                scrollIntoView(option);
-                option.click();
-                return;
-            } catch (TimeoutException ignored) {
-                // Try next xpath
-            }
+    public void goToVacancies(ExtentTest test) {
+        try {
+            test.info("Navigating to Vacancies page via Recruitment tab");
+            goToVacancies();
+            test.pass("Vacancies page loaded");
+        } catch (Exception e) {
+            test.fail("Failed to go to Vacancies: " + e.getMessage());
+            throw e;
         }
+    }
 
-        throw new NoSuchElementException("Dropdown option not found: " + visibleOptionText);
+
+    public void addCandidate(String firstName, String lastName, String email, ExtentTest test) {
+        try {
+            test.info("Clicking Add button");
+            waitUntilClickable(addCandidateTab).click();
+
+            test.info("Filling candidate form: " + firstName + " " + lastName + ", " + email);
+            waitUntilVisible(inputFirstName).sendKeys(firstName);
+            waitUntilVisible(inputLastName).sendKeys(lastName);
+            waitUntilVisible(inputEmail).sendKeys(email);
+
+            test.info("Submitting candidate form");
+            waitUntilClickable(save).click();
+
+            test.pass("Candidate added successfully");
+        } catch (Exception e) {
+            test.fail("Add Candidate failed: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    //returns search results of candidate results
+    public List<WebElement> getCandidateSearchResults() {
+        return driver.findElements(searchResultCandidate);
+    }
+
+    public void typeAndSelectFromDropdown(String inputXpath, String typedValue, String visibleOptionText, ExtentTest test) {
+        try {
+            test.info("Typing into dropdown input: " + typedValue);
+            WebElement input = waitUntilClickable(By.xpath(inputXpath));
+            input.clear();
+            input.sendKeys(typedValue);
+            waitUntilVisible(candidateNameDropdwon);
+            String dropdownPath = "//div[@role='listbox']//span[normalize-space(text())='" + visibleOptionText + "']";
+
+            WebElement option = waitUntilClickable(By.xpath(dropdownPath));
+            scrollIntoView(option);
+            option.click();
+            test.pass("Selected dropdown option: " + visibleOptionText);
+        } catch (TimeoutException ignored) {
+
+
+            throw new NoSuchElementException("Dropdown option not found: " + visibleOptionText);
+        } catch (Exception e) {
+            test.fail("Dropdown selection failed: " + e.getMessage());
+            throw e;
+        }
     }
 
     // Helpers
