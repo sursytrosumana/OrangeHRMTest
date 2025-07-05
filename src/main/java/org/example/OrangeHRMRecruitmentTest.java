@@ -84,36 +84,35 @@ public class OrangeHRMRecruitmentTest {
     @Order(4)
     @Test
     public void addVacanciesTest() throws InterruptedException {
-        driver.findElement(By.xpath("//a[@class='oxd-topbar-body-nav-tab-item' and text()='Vacancies']")).click();
-        Thread.sleep(2000);
-        driver.findElement(By.xpath("//div[@class='orangehrm-header-container']//button[contains(@class, 'oxd-button') and contains(., 'Add')]")).click();
+        //add 1st vacancy
         addVacancy("Test Vacancy 1","QA Engineer", "Orange  Test");
 
-        driver.findElement(By.xpath("//a[@class='oxd-topbar-body-nav-tab-item' and text()='Vacancies']")).click();
-        Thread.sleep(1000);
-        driver.findElement(By.xpath("//div[@class='orangehrm-header-container']//button[contains(@class, 'oxd-button') and contains(., 'Add')]")).click();
+        Thread.sleep(10000);
+
+        System.out.println("second vacancy");
+        //add 2nd vacancy
         addVacancy("Test Vacancy 2","Account Assistant", "sww test");
     }
 
     private void addVacancy(String vacancyName, String jobTitle, String hiringManager) throws InterruptedException {
+        //click on vacancies
+        driver.findElement(By.xpath("//a[@class='oxd-topbar-body-nav-tab-item' and text()='Vacancies']")).click();
+        Thread.sleep(2000);
+        //click on add
+        driver.findElement(By.xpath("//div[@class='orangehrm-header-container']//button[contains(@class, 'oxd-button') and contains(., 'Add')]")).click();
         // Set Vacancy Name
         driver.findElement(By.xpath("//label[text()='Vacancy Name']/ancestor::div[contains(@class,'oxd-input-group')]/descendant::input")).sendKeys(vacancyName);
-
         // Open the dropdown
         driver.findElement(By.xpath("//label[text()='Job Title']/following::div[contains(@class,'oxd-select-text')]")).click();
         Thread.sleep(1000); // Wait for options to load
-
         // Select the job title
         driver.findElement(By.xpath("//div[@role='option' and normalize-space()='" + jobTitle + "']")).click();
-
         //select Hiring Manager
         WebElement input = driver.findElement(By.xpath("//input[@placeholder='Type for hints...']"));
         input.clear();
         input.sendKeys(hiringManager);
-
         //set hiring manager
         driver.findElement(By.xpath("//div[@role='option' and contains(text(),'" + hiringManager + "')]")).click();
-
         // Save
         driver.findElement(By.xpath("//button[text()='Save']")).click();
         Thread.sleep(2000);
@@ -124,14 +123,27 @@ public class OrangeHRMRecruitmentTest {
     public void searchVacancyTest() throws InterruptedException {
         driver.findElement(By.xpath("//a[text()='Vacancies']")).click();
         Thread.sleep(1000);
-        WebElement managerField = driver.findElement(By.xpath("//input[@placeholder='Type for hints...']"));
-        managerField.clear();
-        managerField.sendKeys("manda user");
-        driver.findElement(By.xpath("//button[text()=' Search ']")).click();
+
+        selectDropdownValue("Job Title", "QA Engineer");
+
+        driver.findElement(By.xpath("//button[@type='submit' and contains(.,'Search')]")).click();
         Thread.sleep(2000);
         List<WebElement> vacancies = driver.findElements(By.xpath("//div[@class='oxd-table-card']"));
         Assertions.assertTrue(vacancies.size() >= 2, "Less than 2 vacancies found.");
     }
+
+    public void selectDropdownValue(String dropdownLabel, String valueToSelect) {
+        // Click the dropdown by label (e.g., "Job Title", "Vacancy", etc.)
+        WebElement dropdown = driver.findElement(By.xpath("//label[text()='" + dropdownLabel + "']/following::div[contains(@class,'oxd-select-text')]"));
+        dropdown.click();
+
+        // Wait and select the dropdown item
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement option = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//div[@role='listbox']//span[text()='" + valueToSelect + "']")));
+        option.click();
+    }
+
 
     @AfterAll
     public static void tearDown() {
